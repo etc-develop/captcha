@@ -70,7 +70,7 @@ class CaptchaServiceProvider extends ServiceProvider
             __DIR__ . '/../config/captcha.php',
             'captcha'
         );
-
+        $this->app->when('Intervention\Image\ImageManager')->needs('$driver')->give(config('image.driver', \Intervention\Image\Drivers\Gd\Driver::class));
         // Bind captcha
         $this->app->bind('captcha', function ($app) {
             return new Captcha(

@@ -20,6 +20,8 @@ use Illuminate\Hashing\BcryptHasher as Hasher;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\File;
 use Illuminate\Support\Str;
+use Intervention\Image\Colors\Rgb\Color;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\Gd\Font;
 use Intervention\Image\Image;
 use Intervention\Image\ImageManager;
@@ -264,18 +266,17 @@ class Captcha
         $generator = $this->generate();
         $this->text = $generator['value'];
 
-        $this->canvas = $this->imageManager->canvas(
+        $this->canvas = $this->imageManager->create(
             $this->width,
-            $this->height,
-            $this->bgColor
-        );
+            $this->height
+        )->fill($this->bgColor);
 
         if ($this->bgImage) {
-            $this->image = $this->imageManager->make($this->background())->resize(
+            $this->image = @$this->imageManager->read($this->background())->resize(
                 $this->width,
                 $this->height
             );
-            $this->canvas->insert($this->image);
+            $this->canvas->place($this->image);
         } else {
             $this->image = $this->canvas;
         }
@@ -303,8 +304,8 @@ class Captcha
         return $api ? [
             'sensitive' => $generator['sensitive'],
             'key' => $generator['key'],
-            'img' => $this->image->encode('data-url')->encoded
-        ] : $this->image->response('png', $this->quality);
+            'img' => $this->image->toPng($this->quality)
+        ] : $this->image->toPng($this->quality);
     }
 
     /**
@@ -381,7 +382,7 @@ class Captcha
 
             $this->image->text($char, $marginLeft, $marginTop, function ($font) {
                 /* @var Font $font */
-                $font->file($this->font());
+                $font->filename($this->font());
                 $font->size($this->fontSize());
                 $font->color($this->fontColor());
                 $font->align('left');
@@ -445,14 +446,12 @@ class Captcha
     protected function lines()
     {
         for ($i = 0; $i <= $this->lines; $i++) {
-            $this->image->line(
-                rand(0, $this->image->width()) + $i * rand(0, $this->image->height()),
-                rand(0, $this->image->height()),
-                rand(0, $this->image->width()),
-                rand(0, $this->image->height()),
-                function ($draw) {
+            $this->image->drawLine(
+                function ($line) use ($i) {
+                    $line->from(rand(0, $this->image->width()) + $i * rand(0, $this->image->height()), rand(0, $this->image->height())); // starting point of line
+                    $line->to(rand(0, $this->image->width()), rand(0, $this->image->height())); // ending point
                     /* @var Font $draw */
-                    $draw->color($this->fontColor());
+                    $line->color($this->fontColor());
                 }
             );
         }
