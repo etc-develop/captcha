@@ -304,8 +304,8 @@ class Captcha
         return $api ? [
             'sensitive' => $generator['sensitive'],
             'key' => $generator['key'],
-            'img' => $this->image->toPng($this->quality)
-        ] : $this->image->toPng($this->quality);
+            'img' => $this->image->toPng()
+        ] : $this->image->toPng();
     }
 
     /**
